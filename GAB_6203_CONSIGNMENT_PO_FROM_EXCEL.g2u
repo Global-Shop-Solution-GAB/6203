@@ -1,0 +1,754 @@
+﻿Program.Sub.ScreenSU.Start
+Gui.SS_Form_File..create(BaseForm)
+Gui.SS_Form_File..caption("PO Creation From Excel")
+Gui.SS_Form_File..size(5370,1605)
+Gui.SS_Form_File..position(0,0)
+Gui.SS_Form_File..forecolor(0)
+Gui.SS_Form_File..BackColor(-2147483633)
+Gui.SS_Form_File..maxbutton(False)
+Gui.SS_Form_File..minbutton(False)
+Gui.SS_Form_File..mousepointer(0)
+Gui.SS_Form_File..sizeable(False)
+Gui.SS_Form_File..MinX(0)
+Gui.SS_Form_File..MinY(0)
+Gui.SS_Form_File..Event(UnLoad,SS_Form_File_UnLoad)
+Gui.SS_Form_File..AlwaysOnTop(False)
+Gui.SS_Form_File..FontName("Tahoma")
+Gui.SS_Form_File..FontSize(8.25)
+Gui.SS_Form_File..ControlBox(True)
+Gui.SS_Form_File..Moveable(True)
+Gui.SS_Form_File..ShowInTaskBar(True)
+Gui.SS_Form_File..TitleBar(True)
+Gui.SS_Form_File.lbl_txt_FileSelection.Create(label,"Choose the Excel File",True,1545,210,1,105,135,True,0,"Arial",8,0,0)
+Gui.SS_Form_File.lbl_txt_FileSelection.LabelStretch(True)
+Gui.SS_Form_File.lbl_txt_FileSelection.BorderStyle(0)
+Gui.SS_Form_File.txt_FileSelection.create(textbox,"",True,4500,300,1,105,360,True,0,"Arial",8,-2147483643,1)
+Gui.SS_Form_File.txt_FileSelection.tabstop(True)
+Gui.SS_Form_File.txt_FileSelection.tabindex(1)
+Gui.SS_Form_File.cmd_FileSelection.create(button)
+Gui.SS_Form_File.cmd_FileSelection.Caption("^")
+Gui.SS_Form_File.cmd_FileSelection.size(330,330)
+Gui.SS_Form_File.cmd_FileSelection.position(4680,360)
+Gui.SS_Form_File.cmd_FileSelection.tabstop(True)
+Gui.SS_Form_File.cmd_FileSelection.tabindex(2)
+Gui.SS_Form_File.cmd_FileSelection.Event(Click,cmd_FileSelection_Click)
+Gui.SS_Form_File.cmd_FileSelection.Enabled(True)
+Gui.SS_Form_File.cmd_FileSelection.Visible(True)
+Gui.SS_Form_File.cmd_FileSelection.Zorder(0)
+Gui.SS_Form_File.cmd_FileSelection.FontName("Tahoma")
+Gui.SS_Form_File.cmd_FileSelection.FontSize(8.25)
+Gui.SS_Form_File.cmdFileOK.Create(Button)
+Gui.SS_Form_File.cmdFileOK.Size(855,375)
+Gui.SS_Form_File.cmdFileOK.Position(105,720)
+Gui.SS_Form_File.cmdFileOK.Caption("OK")
+Gui.SS_Form_File.cmdFileOK.Event(Click,Upload)
+Gui.SS_Form_File.cmdFileOK.Enabled(True)
+Gui.SS_Form_File.cmdFileOK.Visible(True)
+Gui.SS_Form_File.cmdFileOK.Zorder(0)
+Gui.SS_Form_File.cmdFileOK.FontName("Tahoma")
+Gui.SS_Form_File.cmdFileOK.FontSize(8.25)
+Program.Sub.ScreenSU.End
+
+Program.Sub.Preflight.Start
+V.Global.bTransODBC.Declare(Boolean)
+V.Global.sPO.Declare(String)
+Program.Sub.Preflight.End
+
+Program.Sub.Main.Start
+F.Intrinsic.Control.SetErrorHandler("Main_Err")
+F.Intrinsic.Control.ClearErrors
+
+V.Local.sError.Declare(String)
+V.Local.bExist.Declare(Boolean)
+
+F.Automation.MSExcel.CheckPresence(V.Local.bExist)
+F.Intrinsic.Control.If(V.Local.bExist,=,False)
+	F.Intrinsic.UI.Msgbox("You need MS Excel in order to use this program.","GAB_6203_PO_FROM_EXCEL")
+	F.Intrinsic.Control.End
+F.Intrinsic.Control.EndIf
+	
+'show selection screen
+Gui.SS_Form_File..Show
+
+F.Intrinsic.Control.ExitSub
+
+F.Intrinsic.Control.Label("Main_Err")
+F.Intrinsic.Control.If(V.Ambient.ErrorNumber,<>,0)
+	F.Intrinsic.String.Concat("Project: GAB_6203_PO_FROM_EXCEL.g2u",V.Ambient.Newline,V.Ambient.Newline,"Subroutine: ",V.Ambient.CurrentSubroutine,V.Ambient.NewLine,"Error Occurred ",V.Ambient.ErrorNumber," with description ",V.Ambient.ErrorDescription,V.Local.sError)
+	F.Intrinsic.UI.Msgbox(V.Local.sError)
+	F.Intrinsic.Control.CallSub(Unload)
+F.Intrinsic.Control.EndIf
+Program.Sub.Main.End
+
+
+Program.Sub.Upload.Start
+F.Intrinsic.Control.SetErrorHandler("Main_Err")
+F.Intrinsic.Control.ClearErrors
+
+V.Local.sError.Declare(String)
+V.Local.sVendor.Declare(String)
+V.Local.dDueDate.Declare(Date)
+V.Local.iRow.Declare(long)
+V.Local.iRowCount.Declare(long)
+V.Local.sSQL.Declare(String)
+V.Local.sRet.Declare(String)
+V.Local.sPODate.Declare(String)
+V.Local.sPODueDate.Declare(String)
+V.Local.iPO.Declare(Long)
+V.Local.sPO.Declare(String)
+V.Local.sComCurr.Declare(String)
+V.Local.sVenName.Declare(String)
+V.Local.sVenAdd1.Declare(String)
+V.Local.sVenAdd2.Declare(String)
+V.Local.sVenAdd3.Declare(String)
+V.Local.sVenAdd4.Declare(String)
+V.Local.sVenAdd5.Declare(String)
+V.Local.sVenState.Declare(String)
+V.Local.sVenZip.Declare(String)
+V.Local.sVenCity.Declare(String)
+V.Local.sVenCountry.Declare(String)
+V.Local.sVenAttn.Declare(String)
+V.Local.sVenIntlAdrs.Declare(String)
+V.Local.sVenGL.Declare(String)
+V.Local.sVenCurr.Declare(String)
+V.Local.sVenPayTerms.Declare(String)
+V.Local.sName.Declare(String)
+V.Local.sNameSplit.Declare(String)
+V.Local.sBuyerCode.Declare(String)
+V.Local.sTemp.Declare(String)
+V.Local.sTempFull.Declare(String)
+V.Local.sComName.Declare(String)
+V.Local.sComAdd1.Declare(String)
+V.Local.sComAdd2.Declare(String)
+V.Local.sComAdd3.Declare(String)
+V.Local.sComAdd4.Declare(String)
+V.Local.sComAdd5.Declare(String)
+V.Local.sComCity.Declare(String)
+V.Local.sComState.Declare(String)
+V.Local.sComZip.Declare(String)
+V.Local.sComCountry.Declare(String)
+V.Local.sComCounty.Declare(String)
+V.Local.sComAttn.Declare(String)
+V.Local.sComIntlAdrs.Declare(String)
+V.Local.iPOLine.Declare(Long)
+V.Local.sPOLine.Declare(String)
+V.Local.sPartNo.Declare(String)
+V.Local.sPartLoc.Declare(String)
+V.Local.sOrderQty.Declare(String)
+V.Local.sProdLine.Declare(String)
+V.Local.sPartDesc.Declare(String)
+V.Local.sPartPurUM.Declare(String)
+V.Local.sPartInvUM.Declare(String)
+V.Local.sCodeSort.Declare(String)
+V.Local.sMessage.Declare(String)
+V.Local.sProdLineGLAcct.Declare(String)
+V.Local.sPurCost.Declare(String)
+V.Local.dExchDate.Declare(Date)
+V.Local.fExchRate.Declare(Float)
+V.Local.sTempValue.Declare(String)
+V.Local.sFileName.Declare(String)
+V.Local.sFileNameWithoutPath.Declare(String)
+V.Local.sStatus.Declare(String)
+V.Local.sReturnFileName.Declare(String)
+V.Local.bDate.Declare(Boolean)
+V.Local.bNumeric.Declare(Boolean)
+V.Local.sDueDateDD.Declare(String)
+V.Local.sDueDateMM.Declare(String)
+V.Local.sDueDateYYYY.Declare(String)
+V.Local.iPONum1.Declare(Long)
+V.Local.iPONum2.Declare(Long)
+V.Local.sPONum1.Declare(String)
+
+
+
+F.Intrinsic.Control.If(v.Screen.SS_Form_File!txt_FileSelection.text,=,"")
+	F.Intrinsic.UI.Msgbox("Please select a file","GAB_6203_PO_FROM_EXCEL")
+	F.Intrinsic.Control.ExitSub 
+F.Intrinsic.Control.EndIf
+
+F.Intrinsic.UI.InvokeWaitDialog("Creating PO. Please wait...","GAB_6203_PO_FROM_EXCEL") 
+
+F.Automation.MSExcel.CreateAppObject("oExcel")
+F.Automation.MSExcel.OpenWorkbook("oExcel","oWB",v.Screen.SS_Form_File!txt_FileSelection.text)
+
+'Read the Header spreadsheet
+F.Automation.MSExcel.OpenWorksheet("oWB","oWS_Header",1)
+F.Automation.MSExcel.ReadRow("oWS_Header",2,1,2,V.Local.sRet) 
+F.Intrinsic.String.Split(V.Local.sRet,"*!*",V.Local.sRet)
+V.Local.sVendor.Set(V.Local.sRet(0))
+F.Intrinsic.String.Left(V.Local.sRet(1),4,V.Local.sDueDateYYYY)
+F.Intrinsic.String.Mid(V.Local.sRet(1),5,2,V.Local.sDueDateMM)
+F.Intrinsic.String.Right(V.Local.sRet(1),2,V.Local.sDueDateDD)
+F.Intrinsic.String.Concat(V.Local.sDueDateMM,"/",V.Local.sDueDateDD,"/",V.Local.sDueDateYYYY,V.Local.sPODueDate)
+F.Intrinsic.Date.IsDate(V.Local.sPODueDate,V.Local.bDate)
+F.Intrinsic.Control.If(V.Local.bDate.Not)
+	F.Intrinsic.String.Concat(V.Local.sDueDateDD,"/",V.Local.sDueDateMM,"/",V.Local.sDueDateYYYY,V.Local.sPODueDate)
+	F.Intrinsic.Date.IsDate(V.Local.sPODueDate,V.Local.bDate)
+	F.Intrinsic.Control.If(V.Local.bDate.Not)
+		'Destroy All Excel Objects
+		F.Automation.Generic.DestroyObject("oWS_Header")
+		F.Automation.Generic.DestroyObject("oWB")
+		F.Automation.Generic.DestroyObject("oExcel")
+		F.Intrinsic.UI.CloseWaitDialog
+		V.Local.sMessage.Set("PO Due Date is invalid")
+		F.Intrinsic.UI.Msgbox(V.Local.sMessage)
+		F.Intrinsic.Control.End
+	F.Intrinsic.Control.EndIf
+F.Intrinsic.Control.Else
+'	F.Intrinsic.Date.ConvertDString(V.Local.bDate.String,"YYYYMMDD",V.Local.dDueDate)
+	F.Intrinsic.String.Concat(V.Local.sDueDateYYYY,V.Local.sDueDateMM,V.Local.sDueDateDD,V.Local.sPODueDate)
+F.Intrinsic.Control.EndIf
+
+'Open connection to database
+F.ODBC.Connection!con.OpenCompanyConnection(500)
+
+'Get Last PO Number
+F.ODBC.Connection!con.ExecuteAndReturn("Select Last_PO_Num From Last_PO Where Ass_Sys = 'PUR' And Ass_Sub_Sys = 'CTL';",V.Local.sPONum1)
+V.Local.iPONum1.Set(V.Local.sPONum1.Long)
+F.ODBC.Connection!con.ExecuteAndReturn("Select F_LONG From OP_HEADER Where ID = '400301' AND SEQUENCE = '0000';",V.Local.iPONum2)
+F.Intrinsic.Control.If(V.Local.iPONum1,>,V.Local.iPONum2)
+	V.Local.iPO.Set(V.Local.iPONum1)
+F.Intrinsic.Control.Else
+	V.Local.iPO.Set(V.Local.iPONum2)
+F.Intrinsic.Control.EndIf
+
+F.Intrinsic.Control.Do
+	F.Intrinsic.Math.Add(V.Local.iPO,1,V.Local.iPO)
+	F.Intrinsic.String.LPad(V.Local.iPO,"0",7,V.Local.sPO)
+	F.Intrinsic.String.Build("select PURCHASE_ORDER from V_PO_HEADER where PURCHASE_ORDER = '{0}'",V.Local.sPO,V.Local.sSQL)
+	F.ODBC.Connection!con.OpenLocalRecordsetRO("rstPOExists",V.Local.sSQL)
+	F.Intrinsic.Control.If(V.ODBC.con!rstPOExists.EOF,=,True)
+		F.ODBC.con!rstPOExists.Close
+		F.Intrinsic.Control.ExitDo
+	F.Intrinsic.Control.Else
+		F.ODBC.con!rstPOExists.Close
+	F.Intrinsic.Control.EndIf
+F.Intrinsic.Control.Loop
+
+'F.Intrinsic.Math.Add(V.Local.iPO,1,V.Local.iPO)
+'F.Intrinsic.String.LPad(V.Local.iPO,"0",7,V.Local.sPO)
+
+'Update Last PO Number
+F.Intrinsic.String.Build("Update Last_PO Set Last_PO_Num = '{0}' Where Ass_Sys = 'PUR' And Ass_Sub_Sys = 'CTL';",V.Local.sPO,V.Local.sSQL)
+F.ODBC.Connection!Con.Execute(V.Local.sSQL)
+F.Intrinsic.String.Build("Update OP_HEADER Set F_LONG = {0} Where ID = '400301' AND SEQUENCE = '0000';",V.Local.iPO,V.Local.sSQL)
+F.ODBC.Connection!Con.Execute(V.Local.sSQL)
+V.Global.sPO.Set(V.Local.sPO)
+
+'Begin ODBC Transaction
+F.ODBC.Connection!con.BeginTransaction
+V.Global.bTransODBC.Set(True)
+
+'Get Based Company Address
+V.Local.sSQL.Set("Select NAME_COMPANY, ADDRESS1, ADDRESS2, CITY, STATE, CODE_ZIP, COUNTRY, COUNTY, ATTENTION, INTL_ADRS From COMPANY where RESV = '1' and REC = '1';")
+F.ODBC.Connection!con.ExecuteAndReturn(V.Local.sSQL,V.Local.sRet)
+F.Intrinsic.String.Split(V.Local.sRet,"*!*",V.Local.sRet)
+V.Local.sComName.set(V.Local.sRet(0))
+V.Local.sComAdd1.set(V.Local.sRet(1))
+V.Local.sComAdd2.set(V.Local.sRet(2))
+V.Local.sComCity.set(V.Local.sRet(3))
+V.Local.sComState.set(V.Local.sRet(4))
+V.Local.sComZip.set(V.Local.sRet(5))
+V.Local.sComCountry.Set(V.Local.sRet(6))
+V.Local.sComCounty.Set(V.Local.sRet(7))
+V.Local.sComAttn.Set(V.Local.sRet(8))
+V.Local.sComIntlAdrs.Set(V.Local.sRet(9))
+F.Intrinsic.Control.If(V.Local.sComIntlAdrs,=,"Y")   
+	V.Local.sSQL.Set("select ADDRESS3, ADDRESS4, ADDRESS5 from V_VENDOR_INTL WHERE VENDOR = ''")
+	F.ODBC.Connection!con.ExecuteAndReturn(V.Local.sSQL,V.Local.sRet)
+	F.Intrinsic.String.Split(V.Local.sRet,"*!*",V.Local.sRet)
+	V.Local.sComAdd3.set(V.Local.sRet(0))
+	V.Local.sComAdd4.set(V.Local.sRet(1))
+	V.Local.sComAdd5.set(V.Local.sRet(2))
+F.Intrinsic.Control.EndIf
+
+'Get Base Currency
+f.Global.General.ReadOption("000000",1,"","0000",V.Local.sComCurr)
+
+'Get Buyer Code
+F.Global.Security.GetFullName(V.Caller.User,V.Local.sName)
+F.Intrinsic.String.Split(V.Local.sName," ",V.Local.sNameSplit)
+F.Intrinsic.Control.If(V.Local.sNameSplit.UBound,=,2)
+	F.Intrinsic.String.Build("{0} {1}",V.Local.sNameSplit(0),V.Local.sNameSplit(2),V.Local.sName)
+F.Intrinsic.Control.EndIf
+F.Intrinsic.String.Build("Select Top 1 Buyer_Code From V_Buyers Where Upper(Buyer) = Upper('{0}');",V.Local.sName,V.Local.sSQL)
+F.ODBC.Connection!con.ExecuteAndReturn(V.Local.sSQL,V.Local.sBuyerCode)
+	
+'Get Vendor Information
+'F.Intrinsic.String.Build("Select A.Vendor,A.Name_Vendor,A.Address1,A.Address2,B.Address3,B.Address4,B.Address5,A.City,A.Rec,A.State,A.Code_Zip,A.Country,A.Attention,A.Normal_GL_Account,A.Buyer,A.Intl_Adrs,C.Currency As CurrencyCode From V_Vendor_Master A Left Join V_Vendor_Intl B on A.Vendor = B.Vendor Left Join V_Vendor_Curr C ON A.Vendor = C.Vendor Where UPPER(A.Vendor) = '{0}';",V.Local.sVendor.UCase,V.Local.sSQL)
+F.Intrinsic.String.Build("Select Vendor,Name_Vendor,Address1,Address2,Address3,Address4,Address5,City,Rec,State,Code_Zip,Country,Attention,Normal_GL_Account,Buyer,Intl_Adrs,Default_Currency As CurrencyCode From V_Vendor_Master3 Where UPPER(Vendor) = '{0}';",V.Local.sVendor.UCase,V.Local.sSQL)
+F.ODBC.Connection!con.OpenLocalRecordsetRO("rstVend",V.Local.sSQL)
+F.Intrinsic.Control.If(V.ODBC.con!rstVend.EOF,=,False)
+	V.Local.sVendor.Set(V.ODBC.con!rstVend.FieldVal!Vendor)
+	V.Local.sVenName.set(V.ODBC.con!rstVend.FieldVal!Name_Vendor)
+	V.Local.sVenAdd1.set(V.ODBC.con!rstVend.FieldVal!Address1)
+	V.Local.sVenAdd2.set(V.ODBC.con!rstVend.FieldVal!Address2)
+	V.Local.sVenAdd3.set(V.ODBC.con!rstVend.FieldVal!Address3)
+	V.Local.sVenAdd4.set(V.ODBC.con!rstVend.FieldVal!Address4)
+	V.Local.sVenAdd5.set(V.ODBC.con!rstVend.FieldVal!Address5)
+	V.Local.sVenState.set(V.ODBC.con!rstVend.FieldVal!State)
+	V.Local.sVenZip.set(V.ODBC.con!rstVend.FieldVal!Code_Zip)
+	V.Local.sVenCity.set(V.ODBC.con!rstVend.FieldVal!City)
+	V.Local.sVenCountry.set(V.ODBC.con!rstVend.FieldVal!Country)
+	V.Local.sVenAttn.set(V.ODBC.con!rstVend.FieldVal!Attention)
+	V.Local.sVenGL.set(V.ODBC.con!rstVend.FieldVal!Normal_GL_Account)
+	V.Local.sVenCurr.set(V.ODBC.con!rstVend.FieldVal!CurrencyCode)
+	V.Local.sVenIntlAdrs.Set(V.ODBC.con!rstVend.FieldVal!Intl_Adrs)
+	F.Intrinsic.Control.If(V.Local.sBuyerCode,=,"","AND",V.ODBC.con!rstVend.FieldValTrim!Buyer,<>,"")
+		V.Local.sBuyerCode.Set(V.ODBC.con!rstVend.FieldVal!Buyer)
+	F.Intrinsic.Control.EndIf
+F.Intrinsic.Control.Else
+	F.ODBC.con!rstVend.Close
+	'Destroy All Excel Objects
+	F.Automation.Generic.DestroyObject("oWS_Header")
+	F.Automation.Generic.DestroyObject("oWB")
+	F.Automation.Generic.DestroyObject("oExcel")
+	F.Intrinsic.UI.CloseWaitDialog
+	V.Local.sMessage.Set("Vendor does not exist in the system. PO creation is cancelled.")
+	F.Intrinsic.UI.Msgbox(V.Local.sMessage)
+	F.Intrinsic.Control.CallSub(Unload)
+F.Intrinsic.Control.EndIf
+F.ODBC.con!rstVend.Close
+
+'Get Vendor Payment Terms
+F.Intrinsic.String.Build("select A.PAYMENT_TERMS AS TERMS_CODE, B.TERMS_MESSAGE AS TERMS_DESC from V_VENDOR_PAY_TO A, V_AP_TERMS B WHERE A.VENDOR = '{0}' AND A.PAYMENT_TERMS = B.TERMS_CODE;",V.Local.sVendor,V.Local.sSQL)
+F.ODBC.Connection!con.OpenLocalRecordsetRO("rstVend",V.Local.sSQL)
+F.Intrinsic.Control.If(V.ODBC.con!rstVend.EOF,=,False)
+	V.Local.sVenPayTerms.Set(V.ODBC.con!rstVend.FieldVal!TERMS_DESC)
+F.Intrinsic.Control.Else
+	V.Local.sVenPayTerms.Set("")
+F.Intrinsic.Control.EndIf
+F.ODBC.con!rstVend.Close
+
+'Get Exchange Rate Date & Exchange Rate
+F.Intrinsic.Control.If(V.Local.sVenCurr,<>,V.Local.sComCurr)
+	F.Intrinsic.String.Build("select top 1 date_exch_rate as Exch_Date, exchange_rate as Exch_Rate from v_exchange_rates where from_iso_code = '{0}' and to_iso_code = '{1}' and date_exch_rate <= '{2}' order by date_exch_rate desc",V.Local.sComCurr,V.Local.sVenCurr,V.Ambient.Date.PervasiveDate,V.Local.sSQL)
+	F.ODBC.Connection!con.OpenLocalRecordsetRO("rstExchRate",V.Local.sSQL)
+	F.Intrinsic.Control.If(V.Odbc.con!rstExchRate.EOF,=,False)
+		V.Local.dExchDate.Set(v.ODBC.con!rstExchRate.FieldVal!Exch_Date)
+		V.Local.fExchRate.Set(v.ODBC.con!rstExchRate.FieldValFloat!Exch_Rate)
+	F.Intrinsic.Control.Else
+		V.Local.dExchDate.Set("1900-01-01")
+		V.Local.fExchRate.Set(0.00000)
+	F.Intrinsic.Control.EndIf
+	f.ODBC.con!rstExchRate.Close
+F.Intrinsic.Control.Else
+	V.Local.dExchDate.Set("1900-01-01")
+	V.Local.fExchRate.Set(0.00000)
+F.Intrinsic.Control.EndIf
+
+'-------------------------------------------------------------------# PO Header #-------------------------------------------------------------------
+'PO Date
+F.Intrinsic.String.Format(V.Ambient.Date,"MMDDYY",V.Local.sPODate)
+'RequiredDate,DueDate
+'F.Intrinsic.String.Format(V.Local.dDueDate.String,"MMDDYY",V.Local.sPODueDate)
+
+'A Record
+'PO,Rec Type, Order Tax Code
+F.Intrinsic.String.Concat(V.Local.sPO,"  AE",V.Local.sTemp)
+F.Intrinsic.String.RPad(V.Local.sTemp," ",12,V.Local.sTemp)
+'Buyer
+V.Local.sRet.Set("")
+F.Intrinsic.String.RPad(V.Local.sBuyerCode," ",7,V.Local.sRet)
+F.Intrinsic.String.Concat(V.Local.sTemp,V.Local.sRet,V.Local.sTemp)
+'Ship Via
+V.Local.sRet.Set("")
+F.Intrinsic.String.RPad(V.Local.sRet," ",15,V.Local.sRet)
+F.Intrinsic.String.Concat(V.Local.sTemp,V.Local.sRet,V.Local.sTemp)
+'FOB
+V.Local.sRet.Set("")
+F.Intrinsic.String.RPad(V.Local.sRet," ",15,V.Local.sRet)
+F.Intrinsic.String.Concat(V.Local.sTemp,V.Local.sRet,V.Local.sTemp)
+'Terms
+V.Local.sRet.Set("")
+F.Intrinsic.String.RPad(V.Local.sVenPayTerms," ",12,V.Local.sRet)
+F.Intrinsic.String.Concat(V.Local.sTemp,V.Local.sRet,V.Local.sTemp)
+'PO Date
+F.Intrinsic.String.Rpad(V.Local.sTemp," ",195,V.Local.sTemp)
+F.Intrinsic.String.Concat(V.Local.sTemp,V.local.sPODate,V.Local.sTemp)
+F.Intrinsic.String.RPad(V.Local.sTemp," ",207,V.Local.sTemp)
+'Date Due
+F.Intrinsic.String.Concat(V.Local.sDueDateMM,V.Local.sDueDateDD,V.Local.sDueDateYYYY,V.Local.sTempValue)
+F.Intrinsic.String.Left(V.Local.sTempValue,6,V.Local.sTempValue)
+F.Intrinsic.String.Concat(V.Local.sTemp,V.local.sTempValue,V.Local.sTemp)
+F.Intrinsic.String.RPad(V.Local.sTemp," ",229,V.Local.sTemp)
+'GL Account
+F.Intrinsic.String.Concat(V.Local.sTemp,V.Local.sVenGL,V.Local.sTemp)
+F.Intrinsic.String.RPad(V.Local.sTemp," ",267,V.Local.sTemp)
+'Vendor #
+F.Intrinsic.String.Concat(V.Local.sTemp,V.Local.sVendor,V.Local.sTemp)
+F.Intrinsic.String.RPad(V.Local.sTemp," ",298,V.Local.sTemp)
+'User 1
+F.Intrinsic.String.Concat(V.Local.sTemp,"",V.Local.sTemp)
+'New Line
+F.Intrinsic.String.Concat(V.Local.sTempFull,V.Local.sTemp,V.Ambient.NewLine,V.Local.sTempFull)
+
+'B Record
+'PO,Rec Type,Name Vendor
+F.Intrinsic.String.Concat(V.Local.sPO,"  B",V.Local.sVenName,V.Local.sTemp)
+F.Intrinsic.String.RPad(V.Local.sTemp," ",40,V.Local.sTemp)
+'Vendor Address
+F.Intrinsic.String.Concat(V.Local.sTemp,V.Local.sVenAdd1,V.Local.sTemp)
+F.Intrinsic.String.RPad(V.Local.sTemp," ",70,V.Local.sTemp)
+F.Intrinsic.String.Concat(V.Local.sTemp,V.Local.sVenAdd2,V.Local.sTemp)
+F.Intrinsic.String.RPad(V.Local.sTemp," ",100,V.Local.sTemp)
+F.Intrinsic.String.Concat(V.Local.sTemp,V.Local.sVenAdd3,V.Local.sTemp)
+F.Intrinsic.String.RPad(V.Local.sTemp," ",130,V.Local.sTemp)
+F.Intrinsic.String.Concat(V.Local.sTemp,V.Local.sVenAdd4,V.Local.sTemp)
+F.Intrinsic.String.RPad(V.Local.sTemp," ",160,V.Local.sTemp)
+F.Intrinsic.String.Concat(V.Local.sTemp,V.Local.sVenAdd5,V.Local.sTemp)
+F.Intrinsic.String.RPad(V.Local.sTemp," ",190,V.Local.sTemp)
+F.Intrinsic.String.Concat(V.Local.sTemp,V.Local.sVenCity,V.Local.sTemp)
+F.Intrinsic.String.RPad(V.Local.sTemp," ",210,V.Local.sTemp)
+F.Intrinsic.String.Concat(V.Local.sTemp,V.Local.sVenState,V.Local.sTemp)
+F.Intrinsic.String.RPad(V.Local.sTemp," ",212,V.Local.sTemp)
+F.Intrinsic.String.Concat(V.Local.sTemp,V.Local.sVenZip,V.Local.sTemp)
+F.Intrinsic.String.RPad(V.Local.sTemp," ",225,V.Local.sTemp)
+F.Intrinsic.String.Concat(V.Local.sTemp,V.Local.sVenCountry,V.Local.sTemp)
+F.Intrinsic.String.RPad(V.Local.sTemp," ",237,V.Local.sTemp)
+'Attention
+F.Intrinsic.String.Concat(V.Local.sTemp,V.Local.sVenAttn,V.Local.sTemp)
+F.Intrinsic.String.RPad(V.Local.sTemp," ",489,V.Local.sTemp)
+'International Address Flag
+F.Intrinsic.String.Concat(V.Local.sTemp,V.Local.sVenIntlAdrs,V.Local.sTemp)
+'New Line
+F.Intrinsic.String.Concat(V.Local.sTempFull,V.Local.sTemp,V.Ambient.NewLine,V.Local.sTempFull)
+
+'C Record
+F.Intrinsic.String.Concat(V.Local.sPO,"  C",V.Local.sComName,V.Local.sTemp)
+F.Intrinsic.String.RPad(V.Local.sTemp," ",40,V.Local.sTemp)
+'Base Company Address
+F.Intrinsic.String.Concat(V.Local.sTemp,V.Local.sComAdd1,V.Local.sTemp)
+F.Intrinsic.String.RPad(V.Local.sTemp," ",70,V.Local.sTemp)
+F.Intrinsic.String.Concat(V.Local.sTemp,V.Local.sComAdd2,V.Local.sTemp)
+F.Intrinsic.String.RPad(V.Local.sTemp," ",100,V.Local.sTemp)
+F.Intrinsic.String.Concat(V.Local.sTemp,V.Local.sComAdd3,V.Local.sTemp)
+F.Intrinsic.String.RPad(V.Local.sTemp," ",130,V.Local.sTemp)
+F.Intrinsic.String.Concat(V.Local.sTemp,V.Local.sComAdd4,V.Local.sTemp)
+F.Intrinsic.String.RPad(V.Local.sTemp," ",160,V.Local.sTemp)
+F.Intrinsic.String.Concat(V.Local.sTemp,V.Local.sComAdd5,V.Local.sTemp)
+F.Intrinsic.String.RPad(V.Local.sTemp," ",190,V.Local.sTemp)
+F.Intrinsic.String.Concat(V.Local.sTemp,V.Local.sComCity,V.Local.sTemp)
+F.Intrinsic.String.RPad(V.Local.sTemp," ",210,V.Local.sTemp)
+F.Intrinsic.String.Concat(V.Local.sTemp,V.Local.sComState,V.Local.sTemp)
+F.Intrinsic.String.RPad(V.Local.sTemp," ",212,V.Local.sTemp)
+F.Intrinsic.String.Concat(V.Local.sTemp,V.Local.sComZip,V.Local.sTemp)
+F.Intrinsic.String.RPad(V.Local.sTemp," ",225,V.Local.sTemp)
+F.Intrinsic.String.Concat(V.Local.sTemp,V.Local.sComCountry,V.Local.sTemp)
+F.Intrinsic.String.RPad(V.Local.sTemp," ",237,V.Local.sTemp)
+'Attention
+F.Intrinsic.String.Concat(V.Local.sTemp,V.Local.sComAttn,V.Local.sTemp)
+F.Intrinsic.String.RPad(V.Local.sTemp," ",489,V.Local.sTemp)
+'International Address Flag
+F.Intrinsic.String.Concat(V.Local.sTemp,V.Local.sComIntlAdrs,V.Local.sTemp)
+'New Line
+F.Intrinsic.String.Concat(V.Local.sTempFull,V.Local.sTemp,V.Ambient.NewLine,V.Local.sTempFull)
+
+
+'-------------------------------------------------------------------# PO Line #-------------------------------------------------------------------
+'Read the Line spreadsheet
+F.Automation.MSExcel.OpenWorksheet("oWB","oWS_Line",2)
+F.Automation.MSExcel.RowCount("oWS_Line",V.Local.iRowCount)
+V.Local.iPOLine.Set(1)
+
+'Purchasing Cost is always 0 because it is consignment part
+'Format Purchasing Cost
+F.Intrinsic.String.Format("0","0.000000",V.Local.sPurCost)
+F.Intrinsic.String.LPad(V.Local.sPurCost,"0",16,V.Local.sPurCost)
+
+F.Intrinsic.Control.For(V.Local.iRow,2,V.Local.iRowCount,1)
+	F.Automation.MSExcel.ReadRow("oWS_Line",V.Local.iRow,1,4,V.Local.sRet) 
+	F.Intrinsic.String.Split(V.Local.sRet,"*!*",V.Local.sRet)
+	
+	'Format Part No with Revision
+	F.Intrinsic.String.GSSPartString(V.Local.sRet(0).Trim,V.Local.sRet(1).Trim,V.Local.sPartNo)
+	
+	V.Local.sPartLoc.Set(V.Local.sRet(2).Trim)
+	
+	'Check the Part No in the Inventory
+	F.Intrinsic.String.Build("Select PART, LOCATION, PRODUCT_LINE, DESCRIPTION, UM_PURCHASING, UM_INVENTORY, CODE_SORT FROM V_INVENTORY_MSTR WHERE UPPER(PART) = '{0}' AND UPPER(LOCATION) = '{1}'",V.Local.sPartNo.UCase,V.Local.sPartLoc.UCase.Trim,V.Local.sSQL)
+	F.ODBC.Connection!con.OpenLocalRecordsetRO("rstPart",V.Local.sSQL)
+	F.Intrinsic.Control.If(V.ODBC.con!rstPart.EOF,=,False)
+		V.Local.sPartNo.Set(V.ODBC.con!rstPart.FieldValTrim!PART)
+		V.Local.sPartLoc.Set(V.ODBC.con!rstPart.FieldValTrim!LOCATION)
+		V.Local.sProdLine.Set(V.ODBC.con!rstPart.FieldValTrim!PRODUCT_LINE)
+		V.Local.sPartDesc.set(V.ODBC.con!rstPart.FieldValTrim!DESCRIPTION)
+		V.Local.sPartPurUM.set(V.ODBC.con!rstPart.FieldValTrim!UM_PURCHASING)
+		V.Local.sPartInvUM.set(V.ODBC.con!rstPart.FieldValTrim!UM_INVENTORY)
+		V.Local.sCodeSort.Set(V.ODBC.con!rstPart.FieldValTrim!CODE_SORT)
+	F.Intrinsic.Control.Else
+		F.ODBC.con!rstPart.Close
+		'Destroy All Excel Objects
+		F.Automation.Generic.DestroyObject("oWS_Line")
+		F.Automation.Generic.DestroyObject("oWS_Header")
+		F.Automation.Generic.DestroyObject("oWB")
+		F.Automation.Generic.DestroyObject("oExcel")
+		F.Intrinsic.UI.CloseWaitDialog 
+		F.Intrinsic.String.Build("Part: {1}{0}Rev: {2}{0}Location: {3}{0}does not exist in the system. PO creation is cancelled.{0}Line: {4} in the 'LINE' spreadsheet.",V.Ambient.NewLine,V.Local.sRet(0).Trim,V.Local.sRet(1).Trim,V.Local.sRet(2).Trim,V.Local.iRow.String,V.Local.sMessage)
+		F.Intrinsic.UI.Msgbox(V.Local.sMessage)
+		F.Intrinsic.Control.CallSub(Unload)
+	F.Intrinsic.Control.EndIf
+	F.ODBC.con!rstPart.Close
+	
+	'Get Purchasing GL Account based on Product Line
+	F.Intrinsic.String.Build("select GL_ACCT from V_PL_GL_ACCOUNTS where PROD_LINE = '{0}' AND TYPE = 2",V.Local.sProdLine,V.Local.sSQL)
+	F.ODBC.Connection!con.OpenLocalRecordsetRO("rstAcct",V.Local.sSQL)
+	F.Intrinsic.Control.If(V.ODBC.con!rstAcct.EOF,=,False)
+		V.Local.sProdLineGLAcct.Set(V.ODBC.con!rstAcct.FieldValTrim!GL_ACCT)
+	F.Intrinsic.Control.Else
+		V.Local.sProdLineGLAcct.Set("")
+	F.Intrinsic.Control.EndIf
+	F.ODBC.con!rstAcct.Close
+	
+	'Check the Order Qty
+	F.Intrinsic.Math.IsNumeric(V.Local.sRet(3).Trim,V.Local.bNumeric)
+	F.Intrinsic.Control.If(V.Local.bNumeric.Not)
+		'Destroy All Excel Objects
+		F.Automation.Generic.DestroyObject("oWS_Line")
+		F.Automation.Generic.DestroyObject("oWS_Header")
+		F.Automation.Generic.DestroyObject("oWB")
+		F.Automation.Generic.DestroyObject("oExcel")
+		F.Intrinsic.UI.CloseWaitDialog
+		F.Intrinsic.String.Build("Quantity in 'LINE' spreadsheet at Line: {0} is invalid",V.Local.iRow.String,V.Local.sMessage)
+		F.Intrinsic.UI.Msgbox(V.Local.sMessage)
+		F.Intrinsic.Control.CallSub(Unload)
+	F.Intrinsic.Control.EndIf
+	'Format Order Qty
+	F.Intrinsic.String.Format(V.Local.sRet(3).Trim,"0.0000",V.Local.sOrderQty)
+	F.Intrinsic.String.LPad(V.Local.sOrderQty,"0",16,V.Local.sOrderQty)
+	
+	'Format PO Line
+	F.Intrinsic.String.Format(V.Local.iPOLine.String,"000",V.Local.sPOLine)
+	F.Intrinsic.String.LPad(V.Local.sPOLine,"0",3,V.Local.sPOLine)
+	
+	'-------------------------------------------------------------------# PO Line #-------------------------------------------------------------------
+	'PO, Line,Part
+	F.Intrinsic.String.Concat(V.Local.sPO,V.Local.sPOLine,V.Local.sPartNo,V.Local.sTemp)
+	F.Intrinsic.String.RPad(V.Local.sTemp," ",30,V.Local.sTemp)
+	'Loc
+	F.Intrinsic.String.Concat(V.Local.sTemp,V.Local.sPartLoc,V.Local.sTemp)
+	F.Intrinsic.String.RPad(V.Local.sTemp," ",32,V.Local.sTemp)
+	'Description
+	F.Intrinsic.String.Concat(V.Local.sTemp,V.Local.sPartDesc,V.Local.sTemp)
+	F.Intrinsic.String.RPad(V.Local.sTemp," ",62,V.Local.sTemp)
+	'UM
+	F.Intrinsic.Control.If(V.Local.sPartPurUM,<>,"")
+		F.Intrinsic.String.Concat(V.Local.sTemp,V.Local.sPartPurUM,V.Local.sTemp)
+	F.Intrinsic.Control.Else
+		F.Intrinsic.String.Concat(V.Local.sTemp,V.Local.sPartInvUM,V.Local.sTemp)
+	F.Intrinsic.Control.EndIf
+	F.Intrinsic.String.Rpad(V.Local.sTemp," ",87,V.Local.sTemp)
+	'Taxable
+	F.Intrinsic.String.Concat(V.Local.sTemp,"E",V.Local.sTemp)
+	F.Intrinsic.String.RPad(V.Local.sTemp," ",88,V.Local.sTemp)
+	'Sort Code
+	F.Intrinsic.String.Concat(V.Local.sTemp,V.Local.sCodeSort,V.Local.sTemp)
+	F.Intrinsic.String.RPad(V.Local.sTemp," ",100,V.Local.sTemp)
+	'GL Account
+	F.Intrinsic.String.Concat(V.Local.sTemp,V.Local.sProdLineGLAcct,V.Local.sTemp)
+	F.Intrinsic.String.RPad(V.Local.sTemp," ",121,V.Local.sTemp)
+	'PL
+	F.Intrinsic.String.Concat(V.Local.sTemp,V.Local.sProdLine,V.Local.sTemp)
+	F.Intrinsic.String.RPad(V.Local.sTemp," ",124,V.Local.sTemp)
+	'Required Date Line DueDate
+	F.Intrinsic.String.Concat(V.Local.sDueDateMM,V.Local.sDueDateDD,V.Local.sDueDateYYYY,V.Local.sTempValue)
+	F.Intrinsic.String.Left(V.Local.sTempValue,6,V.Local.sTempValue)
+	F.Intrinsic.String.Concat(V.Local.sTemp,V.Local.sTempValue,V.Local.sTemp)
+	F.Intrinsic.String.RPad(V.Local.sTemp," ",136,V.Local.sTemp)
+	'Cost
+	F.Intrinsic.String.Concat(V.Local.sTemp,V.Local.sPurCost,V.Local.sTemp)
+	F.Intrinsic.String.RPad(V.Local.sTemp," ",168,V.Local.sTemp)
+	'Qty
+	F.Intrinsic.String.Concat(V.Local.sTemp,V.Local.sOrderQty,V.Local.sTemp)
+	F.Intrinsic.String.RPad(V.Local.sTemp," ",331,V.Local.sTemp)
+	'Inventory UM
+	F.Intrinsic.String.Concat(V.Local.sTemp,V.Local.sPartInvUM,V.Local.sTemp)
+	F.Intrinsic.String.Rpad(V.Local.sTemp," ",339,V.Local.sTemp)
+	'Exchange Currency
+	F.Intrinsic.String.Concat(V.Local.sTemp,V.Local.sVenCurr,V.Local.sTemp)
+	
+	F.Intrinsic.Control.If(V.Local.sVenCurr,<>,V.Local.sComCurr)
+		F.Intrinsic.String.Rpad(V.Local.sTemp," ",342,V.Local.sTemp)
+		'Exchange Extension -- will be zero because the Purchasing Cost is zero
+		F.Intrinsic.String.Format("0","0.00",V.Local.sTempValue)
+		F.Intrinsic.String.LPad(V.Local.sTempValue,"0",16,V.Local.sTempValue)
+		F.Intrinsic.String.Concat(V.Local.sTemp,V.Local.sTempValue,V.Local.sTemp)
+		F.Intrinsic.String.Rpad(V.Local.sTemp," ",508,V.Local.sTemp)
+		'Exchange Date
+		F.Intrinsic.String.Format(V.Local.dExchDate,"YYYYMMDD",V.Local.sTempValue)
+		F.Intrinsic.String.Concat(V.Local.sTemp,V.Local.sTempValue,V.Local.sTemp)
+		F.Intrinsic.String.Rpad(V.Local.sTemp," ",516,V.Local.sTemp)
+		'Exchange Cost
+		F.Intrinsic.String.Format("0","0.000000",V.Local.sTempValue)
+		F.Intrinsic.String.LPad(V.Local.sTempValue,"0",16,V.Local.sTempValue)
+		F.Intrinsic.String.Concat(V.Local.sTemp,V.Local.sTempValue,V.Local.sTemp)
+		F.Intrinsic.String.Rpad(V.Local.sTemp," ",532,V.Local.sTemp)
+		'Exchange Rate
+		F.Intrinsic.String.Format(V.Local.fExchRate.String,"0.00000",V.Local.sTempValue)
+		F.Intrinsic.String.LPad(V.Local.sTempValue,"0",16,V.Local.sTempValue)
+		F.Intrinsic.String.Concat(V.Local.sTemp,V.Local.sTempValue,V.Local.sTemp)
+	F.Intrinsic.Control.EndIf
+	
+	'Add line to variable that will be written to PURORDER.txt
+	F.Intrinsic.String.Concat(V.Local.sTempFull,V.Local.sTemp,V.Ambient.NewLine,V.Local.sTempFull)
+	
+	'Update On Order PO in Invenoty_Mstr (I1MST)
+	F.Intrinsic.String.Build("Update Inventory_Mstr Set Qty_OnOrder_PO = Qty_OnOrder_PO + {0} Where Part = '{1}' And Location = '{2}';",V.Local.sOrderQty.Float,V.Local.sPartNo,V.Local.sPartLoc,V.Local.sSQL)
+	F.ODBC.Connection!con.Execute(V.Local.sSQL)	
+	
+	'Increment the PO Line Number
+	F.Intrinsic.Math.Add(V.Local.iPOLine,1,V.Local.iPOLine)
+	
+F.Intrinsic.Control.Next(V.Local.iRow)
+
+'Write PO info to PURORDER_{username}_{terminal}.txt
+F.Intrinsic.String.Build("{0}\PURORDER_{1}_{2}.txt",V.Caller.FilesDir,V.Caller.User.Trim,V.Caller.Terminal.Trim,V.Local.sFileName)
+F.Intrinsic.File.String2File(V.Local.sFileName,V.Local.sTempFull)
+F.Intrinsic.File.GetFileNameFromFQN(V.Local.sFileName,V.Local.sFileNameWithoutPath)
+F.Intrinsic.String.Replace(V.Local.sFileNameWithoutPath,".txt","",V.Local.sFileNameWithoutPath)
+'Upload PO File
+F.Global.Callwrapper.New("POUpload","Purchasing.PurchaseOrderUpload")
+F.Global.Callwrapper.SetProperty("POUpload","Mode",0)
+F.Global.Callwrapper.SetProperty("POUpload","FileName",V.Local.sFileNameWithoutPath)
+F.Global.CallWrapper.Run("POUpload")
+F.Global.CallWrapper.GetProperty("POUpload","Status",V.Local.sStatus)
+F.Global.CallWrapper.GetProperty("POUpload","ReturnFileName",V.Local.sReturnFileName)
+
+F.Intrinsic.Control.If(V.Local.sStatus,<>,"Success")
+	'Delete PURORDER_{username}_{terminal}.txt
+	F.Intrinsic.File.DeleteFile(V.Local.sFileName)
+	V.Local.sFileName.Set("")
+	'Destroy Excel objects
+	F.Automation.Generic.DestroyObject("oWS_Line")
+	F.Automation.Generic.DestroyObject("oWS_Header")
+	F.Automation.Generic.DestroyObject("oWB")
+	F.Automation.Generic.DestroyObject("oExcel")
+	F.Intrinsic.UI.CloseWaitDialog 
+	V.Local.sMessage.Set("Error occurred in the PO Upload program. PO creation is cancelled.")
+	F.Intrinsic.UI.Msgbox(V.Local.sMessage)
+	F.Intrinsic.Control.CallSub(Unload)
+F.Intrinsic.Control.EndIf
+
+'Delete PURORDER_{username}_{terminal}.txt
+F.Intrinsic.File.DeleteFile(V.Local.sFileName)
+V.Local.sFileName.Set("")
+
+'Destroy Excel objects
+F.Automation.Generic.DestroyObject("oWS_Line")
+F.Automation.Generic.DestroyObject("oWS_Header")
+F.Automation.Generic.DestroyObject("oWB")
+F.Automation.Generic.DestroyObject("oExcel")
+
+'Commit ODBC Transaction
+F.ODBC.Connection!con.CommitTransaction
+V.Global.bTransODBC.Set(False)
+
+F.Intrinsic.UI.CloseWaitDialog 
+
+F.Intrinsic.String.Build("PO: {0} created successfully.",V.Local.sPO,V.Local.sMessage)
+F.Intrinsic.UI.Msgbox(V.Local.sMessage)
+
+F.ODBC.Connection!con.Close 
+
+F.Intrinsic.Control.End
+
+F.Intrinsic.Control.Label("Main_Err")
+F.Intrinsic.Control.If(V.Ambient.ErrorNumber,<>,0)
+	F.Intrinsic.UI.CloseWaitDialog 
+	F.Intrinsic.String.Concat("Project: GAB_6203_PO_FROM_EXCEL.g2u",V.Ambient.Newline,V.Ambient.Newline,"Subroutine: ",V.Ambient.CurrentSubroutine,V.Ambient.NewLine,"Error Occurred ",V.Ambient.ErrorNumber," with description ",V.Ambient.ErrorDescription,V.Local.sError)
+	F.Intrinsic.UI.Msgbox(V.Local.sError)
+	F.Intrinsic.Control.CallSub(Unload)
+F.Intrinsic.Control.EndIf
+Program.Sub.Upload.End
+
+
+Program.Sub.cmd_FileSelection_Click.Start
+F.Intrinsic.Control.SetErrorHandler("Main_Err")
+F.Intrinsic.Control.ClearErrors
+
+V.Local.sError.Declare(String)
+V.Local.sFile.Declare(String)
+V.Local.sDir.Declare(String)
+V.Local.sType.Declare(String)
+V.Local.bExist.Declare(Boolean)
+
+F.Intrinsic.String.Build("{0}\Select File",V.Caller.FilesDir,V.Local.sDir)
+'F.Intrinsic.UI.ShowOpenFileDialog("","Excel Files|*.xls;*.xlsx|Calc Files|*.ods|All Files|*.*","",V.Local.retFile)
+F.Intrinsic.UI.ShowOpenFileDialog("","Excel Files|*.xls;*.xlsx","",V.Local.sFile)
+F.Intrinsic.Control.If(V.Local.sFile,<>,"***CANCEL***")
+	Gui.SS_Form_File.txt_FileSelection.Text(V.Local.sFile)	
+F.Intrinsic.Control.Else
+	Gui.SS_Form_File.txt_FileSelection.Text("")	
+F.Intrinsic.Control.EndIf
+
+F.Intrinsic.Control.ExitSub
+
+F.Intrinsic.Control.Label("Main_Err")
+F.Intrinsic.Control.If(V.Ambient.ErrorNumber,<>,0)
+	F.Intrinsic.String.Concat("Project: GAB_6203_PO_FROM_EXCEL.g2u",V.Ambient.Newline,V.Ambient.Newline,"Subroutine: ",V.Ambient.CurrentSubroutine,V.Ambient.NewLine,"Error Occurred ",V.Ambient.ErrorNumber," with description ",V.Ambient.ErrorDescription,V.Local.sError)
+	F.Intrinsic.UI.Msgbox(V.Local.sError)
+	F.Intrinsic.Control.CallSub(Unload)
+F.Intrinsic.Control.EndIf
+Program.Sub.cmd_FileSelection_Click.End
+
+Program.Sub.Unload.Start
+F.Intrinsic.Control.SetErrorHandler("Main_Err")
+F.Intrinsic.Control.ClearErrors
+
+V.Local.sError.Declare(String)
+V.Local.iPO.Declare(Long)
+V.Local.sPO.Declare(String)
+V.Local.sSQL.Declare(String)
+
+'If there is ODBC Transaction pending then Rollback
+F.Intrinsic.Control.If(V.Global.bTransODBC)
+	F.ODBC.Connection!con.RollbackTransaction
+F.Intrinsic.Control.EndIf
+
+''Get Last PO Number
+''F.ODBC.Connection!con.ExecuteAndReturn("Select Last_PO_Num From Last_PO Where Ass_Sys = 'PUR' And Ass_Sub_Sys = 'CTL';",V.Local.iPO)
+'F.ODBC.Connection!con.ExecuteAndReturn("Select F_LONG From OP_HEADER Where ID = '400301' AND SEQUENCE = '0000';",V.Local.iPO)
+'F.Intrinsic.String.LPad(V.Local.iPO,"0",7,V.Local.sPO)
+
+''If the Last PO Number is the same as the incremented PO Number earlier, we need to change it back to the Old Last PO Number
+'F.Intrinsic.Control.If(V.Local.sPO,=,V.Global.sPO)
+'	'Update Last PO Number
+'	F.Intrinsic.Math.Sub(V.Local.iPO,1,V.Local.iPO)
+'	F.Intrinsic.String.LPad(V.Local.iPO,"0",7,V.Local.sPO)
+'	F.Intrinsic.String.Build("Update OP_HEADER Set F_LONG = {0} Where ID = '400301' AND SEQUENCE = '0000';",V.Local.iPO,V.Local.sSQL)
+''	F.Intrinsic.String.Build("Update Last_PO Set Last_PO_Num = '{0}' Where Ass_Sys = 'PUR' And Ass_Sub_Sys = 'CTL';",V.Global.sPO,V.Local.sSQL)
+'	F.ODBC.Connection!con.Execute(V.Local.sSQL)
+'F.Intrinsic.Control.EndIf
+
+F.Intrinsic.Control.If(V.ODBC.con.State,=,1)
+	F.ODBC.Connection!con.close
+F.Intrinsic.Control.Endif
+
+F.Intrinsic.Control.End 
+
+F.Intrinsic.Control.Label("Main_Err")
+F.Intrinsic.Control.If(V.Ambient.ErrorNumber,<>,0)
+	F.Intrinsic.String.Concat("Project: GAB_6203_PO_FROM_EXCEL.g2u",V.Ambient.Newline,V.Ambient.Newline,"Subroutine: ",V.Ambient.CurrentSubroutine,V.Ambient.NewLine,"Error Occurred ",V.Ambient.ErrorNumber," with description ",V.Ambient.ErrorDescription,V.Local.sError)
+	F.Intrinsic.UI.Msgbox(V.Local.sError)
+F.Intrinsic.Control.EndIf
+Program.Sub.Unload.End
+
+Program.Sub.SS_Form_File_UnLoad.Start
+F.Intrinsic.Control.SetErrorHandler("Main_Err")
+F.Intrinsic.Control.ClearErrors
+
+F.Intrinsic.Control.End 
+
+F.Intrinsic.Control.Label("Main_Err")
+F.Intrinsic.Control.If(V.Ambient.ErrorNumber,<>,0)
+	F.Intrinsic.String.Concat("Project: GAB_6203_PO_FROM_EXCEL.g2u",V.Ambient.Newline,V.Ambient.Newline,"Subroutine: ",V.Ambient.CurrentSubroutine,V.Ambient.NewLine,"Error Occurred ",V.Ambient.ErrorNumber," with description ",V.Ambient.ErrorDescription,V.Local.sError)
+	F.Intrinsic.UI.Msgbox(V.Local.sError)
+F.Intrinsic.Control.EndIf
+Program.Sub.SS_Form_File_UnLoad.End
+
+Program.Sub.Comments.Start
+${$0$}$GCG_4685_OrdLineUpload.g2$}$RAN$}$8/4/2017 11:08:32 AM$}$False
+${$3$}$0$}$$}$0$}$-1$}$$}$12:00:00 AM$}$Order Line upload from Maintenance Screen
+${$5$}$2.0.0.0$}$2
+${$6$}$tdjohan$}$20210406115201670$}$8rAQhOSvlohpQhMDm1j544LwmwXnRbkhkwTE0R5i6n4YYPuqeGItsBwX/lSbTN7RXcVX3iYq1sM=
+Program.Sub.Comments.End
